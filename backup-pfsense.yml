@@ -1,17 +1,32 @@
 ---
-- name: Backup de configuração pfSense
+- name: Backup de configuração pfSense (contorno checksum)
   hosts: pfsenseloja
   gather_facts: no
 
   tasks:
-    - name: Criar pasta local de backup
+    - name: Verificar inventory_hostname
+      debug:
+        msg: "inventory_hostname = {{ inventory_hostname }}"
+
+    - name: Criar pasta de backup local (no host AWX)
       local_action:
         module: file
         path: "./backups"
         state: directory
 
-    - name: Buscar config.xml do pfSense
+    - name: Ler hostname real do pfSense
+      raw: cat /etc/hostname
+      register: pf_name
+
+    - name: Copiar config.xml para /tmp com hostname real
+      raw: cp /cf/conf/config.xml /tmp/config-{{ pf_name.stdout.strip() }}.xml
+
+    - name: Baixar o config.xml sem checksum
       fetch:
-        src: /cf/conf/config.xml
-        dest: "./backups/{{ inventory_hostname }}-config.xml"
+        src: /tmp/config-{{ pf_name.stdout.strip() }}.xml
+        dest: "./backups/{{ pf_name.stdout.strip() }}-config.xml"
         flat: yes
+        validate_checksum: no
+
+    - name: Remover arquivo temporário no pfSense
+      raw: rm /tmp/config-{{ pf_name.stdout.strip() }}.xml
