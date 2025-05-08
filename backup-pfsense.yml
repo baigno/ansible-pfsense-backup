@@ -1,6 +1,6 @@
 ---
 - name: Backup de configuração pfSense
-  hosts: pfsense loja
+  hosts: pfsenseloja
   gather_facts: no
 
   tasks:
