@@ -1,0 +1,17 @@
+---
+- name: Backup de configuração pfSense
+  hosts: pfsense01
+  gather_facts: no
+
+  tasks:
+    - name: Criar pasta local de backup
+      local_action:
+        module: file
+        path: "./backups"
+        state: directory
+
+    - name: Buscar config.xml do pfSense
+      fetch:
+        src: /cf/conf/config.xml
+        dest: "./backups/{{ inventory_hostname }}-config.xml"
+        flat: yes
