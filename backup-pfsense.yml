@@ -1,22 +1,22 @@
 ---
-- name: Backup de configuração pfSense via base64
-  hosts: pfsenseloja        # ajuste para seu host no Inventory
+- name: Backup de configuração pfSense persistente
+  hosts: pfsenseloja
   gather_facts: no
 
   tasks:
-    - name: Criar pasta de backup local (no AWX)
-      local_action:
-        module: file
-        path: "./backups"
+    - name: Criar pasta de backup persistente no host
+      ansible.builtin.file:
+        path: /var/lib/awx/projects/pfsense-backup/backups
         state: directory
+      delegate_to: localhost
 
     - name: Ler config.xml e codificar em base64 no pfSense
       raw: base64 /cf/conf/config.xml
       register: config_b64
       changed_when: false
 
-    - name: Gravar o config.xml decodificado localmente
-      local_action:
-        module: copy
+    - name: Gravar o config.xml decodificado no host
+      ansible.builtin.copy:
+        dest: /var/lib/awx/projects/pfsense-backup/backups/{{ inventory_hostname }}-config.xml
         content: "{{ config_b64.stdout | b64decode }}"
-        dest: "./backups/{{ inventory_hostname }}-config.xml"
+      delegate_to: localhost
