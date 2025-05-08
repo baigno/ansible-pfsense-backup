@@ -1,24 +1,22 @@
 ---
-- name: Backup de configuração pfSense (contorno checksum)
-  hosts: pfsenseloja      # ajuste para seu host no Inventário
+- name: Backup de configuração pfSense via base64
+  hosts: pfsenseloja        # ajuste para seu host no Inventory
   gather_facts: no
 
   tasks:
-    - name: Criar pasta de backup local (AWX)
+    - name: Criar pasta de backup local (no AWX)
       local_action:
         module: file
         path: "./backups"
         state: directory
 
-    - name: Copiar config.xml para /tmp no pfSense
-      raw: cp /cf/conf/config.xml /tmp/config-{{ inventory_hostname }}.xml
+    - name: Ler config.xml e codificar em base64 no pfSense
+      raw: base64 /cf/conf/config.xml
+      register: config_b64
+      changed_when: false
 
-    - name: Baixar o config.xml sem validação de checksum
-      fetch:
-        src: /tmp/config-{{ inventory_hostname }}.xml
+    - name: Gravar o config.xml decodificado localmente
+      local_action:
+        module: copy
+        content: "{{ config_b64.stdout | b64decode }}"
         dest: "./backups/{{ inventory_hostname }}-config.xml"
-        flat: yes
-        validate_checksum: no
-
-    - name: Remover arquivo temporário no pfSense
-      raw: rm /tmp/config-{{ inventory_hostname }}.xml
